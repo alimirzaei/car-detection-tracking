@@ -1,6 +1,8 @@
 clear;
 close all;
 
+addpath(genpath('toolbox'))
+
 thresh=15;
 show = 1;
 
@@ -13,20 +15,13 @@ numberOfFrames = vid.Duration * vid.FrameRate;
 time=[];
 
 
-% showROI = true;
-
-detector = vision.ForegroundDetector(...
-    'NumTrainingFrames', 100, ... % 5 because of short video
-    'InitialVariance', 30*30, ...
-    'LearningRate', .005); % initial standard deviation of 30
-blob = vision.BlobAnalysis(...
-    'CentroidOutputPort', false, 'AreaOutputPort', false, ...
-    'BoundingBoxOutputPort', true, ...
-    'MinimumBlobAreaSource', 'Property', 'MinimumBlobArea', 250);
 % Load ROI and getting Mask
 getROI = true;
 
+detector = AcfDetector('models/AUTCUP64-minds32Detector.mat');
 tracker = MultiobjectKalmanTracker;
+
+
 while(frn < numberOfFrames )
     % if frn > 30 * vid.FrameRate , break; end
     
@@ -43,9 +38,8 @@ while(frn < numberOfFrames )
     end
     %im=imresize(im,[size(im,1)*.4, size(im,2)*.4]);
     im(~repmat(ROI, [1, 1, 3])) = 0;
-    fgMask = step(detector, im );
-    bboxes   = step(blob, fgMask);
-    bboxes = double(bboxes);
+ 
+    bboxes = detector.detect(im);
     frn=frn+1;
     
     tracks = tracker.track(bboxes);
