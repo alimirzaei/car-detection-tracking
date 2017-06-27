@@ -10,7 +10,7 @@ classdef MultiobjectKalmanTracker < handle
             obj.initializeTracks();
         end
         
-        function track(obj, detections)
+        function tracks = track(obj, detections)
             obj.predictNewLocationsOfTracks();
             [assignments, unassignedTracks, unassignedDetections] = ...
                 obj.detectionToTrackAssignment(detections);
@@ -18,6 +18,8 @@ classdef MultiobjectKalmanTracker < handle
             obj.updateUnassignedTracks(unassignedTracks);
             obj.deleteLostTracks();
             obj.createNewTracks(detections(unassignedDetections,:));
+            obj.deleteInvalidTracks();
+            tracks = obj.tracks;
         end
         
     end
@@ -148,6 +150,20 @@ classdef MultiobjectKalmanTracker < handle
             obj.tracks = obj.tracks(~lostInds);
         end
         
+        
+            
+        function deleteInvalidTracks(obj)
+            if isempty(obj.tracks)
+                return;
+            end    
+            bboxes = reshape([obj.tracks(:).bbox]',4,length(obj.tracks))';
+            heights = bboxes(:,4);
+            widths = bboxes(:,3);
+            
+            validTracks = heights>0 & widths>0;
+            obj.tracks = obj.tracks(validTracks);
+        end
+        
         %% Create New Tracks
         % Create new tracks from unassigned detections. Assume that any unassigned
         % detection is a start of a new track. In practice, you can use other cues
@@ -207,6 +223,7 @@ classdef MultiobjectKalmanTracker < handle
                 obj.nextId = obj.nextId + 1;
             end
         end
+    
     end
 end
 
